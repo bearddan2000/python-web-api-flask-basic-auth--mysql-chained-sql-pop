@@ -1,0 +1,2 @@
+GRANT ALL PRIVILEGES ON `beverage`.* TO 'maria'@'%';
+FLUSH PRIVILEGES;

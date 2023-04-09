@@ -1,0 +1,48 @@
+version: "3.4"
+
+services:
+  db:
+    image: mariadb:latest
+    ports:
+      - 3306:3306
+    healthcheck:
+      test: "exit 0"
+    volumes:
+      - ./db/data_dump:/var/lib/mysql
+      - ./db/sql:/docker-entrypoint-initdb.d
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+      - MYSQL_USER=maria
+      - MYSQL_PASSWORD=pass
+
+  py-srv:
+    build:
+      context: py-srv
+    ports:
+      - 80:5000
+    healthcheck:
+      test: "exit 0"
+    command: sh -c "/wait && python app.py"
+    environment:
+      - WAIT_HOSTS=db:3306
+      - WAIT_HOSTS_TIMEOUT=300
+      - WAIT_SLEEP_INTERVAL=30
+      - WAIT_HOST_CONNECT_TIMEOUT=30
+    depends_on:
+      - db
+    links:
+      - "db:db"
+
+  py-test-srv:
+    build:
+      context: py-test-srv
+    command: sh -c "/wait && python app.py"
+    environment:
+      - WAIT_HOSTS=db:3306,py-srv:5000
+      - WAIT_HOSTS_TIMEOUT=300
+      - WAIT_SLEEP_INTERVAL=30
+      - WAIT_HOST_CONNECT_TIMEOUT=30
+    depends_on:
+      - py-srv
+    links:
+      - "py-srv:py-srv"
